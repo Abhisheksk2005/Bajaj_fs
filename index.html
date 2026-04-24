@@ -6,32 +6,90 @@
   <title>BFHL Node Hierarchy</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"/>
   <style>
-    body { background: #f8f9fa; }
-    .tree-ul { list-style: none; padding-left: 20px; border-left: 2px solid #dee2e6; margin-top: 4px; }
+    body { background: #111314; color: #e5e7eb; }
+    .container { max-width: 860px; }
+    h3 { color: #fff; }
+    p.text-muted { color: #9ca3af !important; }
+
+    /* comet card */
+    .comet-card {
+      position: relative;
+      border-radius: 16px;
+      padding: 2px;
+      background: #1f2121;
+      overflow: hidden;
+    }
+    .comet-card::before {
+      content: '';
+      position: absolute;
+      inset: -60%;
+      background: conic-gradient(
+        from 0deg,
+        transparent 0%,
+        transparent 70%,
+        #a78bfa 80%,
+        #60a5fa 88%,
+        #fff 92%,
+        transparent 94%,
+        transparent 100%
+      );
+      animation: comet-spin 3s linear infinite;
+      border-radius: 50%;
+    }
+    @keyframes comet-spin {
+      from { transform: rotate(0deg); }
+      to   { transform: rotate(360deg); }
+    }
+    .comet-inner {
+      position: relative;
+      z-index: 1;
+      background: #1f2121;
+      border-radius: 14px;
+      padding: 1.5rem;
+    }
+
+    /* override bootstrap card for dark */
+    .card {
+      background: #1f2121;
+      border: 1px solid #2d2f2f;
+      color: #e5e7eb;
+    }
+    .card-header { border-bottom: 1px solid #2d2f2f; background: #191b1b; color: #e5e7eb; }
+    .form-control, .form-control:focus {
+      background: #111314;
+      border-color: #374151;
+      color: #e5e7eb;
+    }
+    .form-control::placeholder { color: #6b7280; }
+    .form-label { color: #d1d5db; }
+    .text-muted { color: #9ca3af !important; }
+    code { color: #a78bfa; }
+
+    .tree-ul { list-style: none; padding-left: 20px; border-left: 2px solid #374151; margin-top: 4px; }
     .tree-ul li { position: relative; padding: 2px 0 2px 14px; }
     .tree-ul li::before {
       content: '';
       position: absolute;
       left: 0; top: 12px;
       width: 12px; height: 1px;
-      background: #adb5bd;
+      background: #4b5563;
     }
     .node-badge { font-family: monospace; font-size: 0.95rem; }
   </style>
 </head>
 <body>
 <div class="container py-4">
-  <h3 class="mb-1">Bajaj Full Stack Task-Abhishek Kinjawadekar/h3>
+  <h3 class="mb-1">Bajaj Full Stack Task-Abhishek Kinjawadekar</h3>
   <p class="text-muted mb-4">Enter edges one per line (e.g. <code>A->B</code>) and hit Submit.</p>
 
-  <div class="card mb-4 shadow-sm">
-    <div class="card-body">
+  <div class="comet-card mb-4">
+    <div class="comet-inner">
       <div class="mb-3">
         <label class="form-label fw-semibold">Node Edges</label>
         <textarea id="inputData" class="form-control font-monospace" rows="7"
           placeholder="A->B&#10;A->C&#10;B->D&#10;X->Y&#10;Y->Z&#10;Z->X"></textarea>
       </div>
-      <button id="submitBtn" class="btn btn-primary">Submit</button>
+      <button id="submitBtn" class="btn btn-primary px-4">Submit</button>
     </div>
   </div>
 
