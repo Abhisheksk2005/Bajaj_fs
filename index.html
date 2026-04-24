@@ -11,6 +11,29 @@
     h3 { color: #fff; }
     p.text-muted { color: #9ca3af !important; }
 
+    /* ripple grid background */
+    #bg-grid {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      display: grid;
+      grid-template-columns: repeat(var(--cols, 20), 1fr);
+      grid-template-rows: repeat(var(--rows, 20), 1fr);
+      pointer-events: none;
+    }
+    .bg-cell {
+      border: 1px solid rgba(255,255,255,0.04);
+      opacity: 0.4;
+      animation: var(--animate-cell-ripple);
+      --duration: 2000ms;
+    }
+    @keyframes cell-ripple {
+      0%   { opacity: 0.4; }
+      50%  { opacity: 0.8; }
+      100% { opacity: 0.4; }
+    }
+    .container { position: relative; z-index: 1; }
+
     /* comet card */
     .comet-card {
       position: relative;
@@ -75,19 +98,80 @@
       background: #4b5563;
     }
     .node-badge { font-family: monospace; font-size: 0.95rem; }
+
+    /* glowing stars card */
+    .stars-card {
+      position: relative;
+      overflow: hidden;
+      border-radius: 16px;
+      background: #111314;
+      border: 1px solid #2d2f2f;
+      padding: 1.25rem 1.5rem 1.5rem;
+      min-height: 200px;
+    }
+    .stars-card .stars-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+    }
+    .star {
+      position: absolute;
+      border-radius: 50%;
+      background: #fff;
+      animation: star-glow var(--dur, 3s) ease-in-out infinite var(--delay, 0s);
+    }
+    @keyframes star-glow {
+      0%, 100% { opacity: 0.15; transform: scale(1); }
+      50%       { opacity: 1;    transform: scale(1.6); }
+    }
+    .stars-card-content {
+      position: relative;
+      z-index: 1;
+    }
+    .stars-card-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 0.25rem;
+      font-family: monospace;
+    }
+    .stars-card-desc {
+      font-size: 0.82rem;
+      color: #9ca3af;
+      margin-bottom: 1rem;
+    }
+    .stars-card-footer {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+    .stars-icon-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: hsla(0,0%,100%,.1);
+      flex-shrink: 0;
+    }
+    .stars-icon-btn svg {
+      width: 16px; height: 16px;
+      stroke: #fff; stroke-width: 2;
+    }
   </style>
 </head>
 <body>
+<div id="bg-grid"></div>
 <div class="container py-4">
   <h3 class="mb-1">Bajaj Full Stack Task-Abhishek Kinjawadekar</h3>
-  <p class="text-muted mb-4">Enter edges one per line (e.g. <code>A->B</code>) and hit Submit.</p>
+  <p class="text-muted mb-4">Paste a JSON body <code>{"data": [...]}</code> or enter edges one per line (e.g. <code>A->B</code>).</p>
 
   <div class="comet-card mb-4">
     <div class="comet-inner">
       <div class="mb-3">
         <label class="form-label fw-semibold">Node Edges</label>
-        <textarea id="inputData" class="form-control font-monospace" rows="7"
-          placeholder="A->B&#10;A->C&#10;B->D&#10;X->Y&#10;Y->Z&#10;Z->X"></textarea>
+        <textarea id="inputData" class="form-control font-monospace" rows="8"
+          placeholder='Paste JSON: {"data": ["A->B", "A->C", "B->D"]}&#10;&#10;Or one edge per line:&#10;A->B&#10;A->C&#10;B->D'></textarea>
       </div>
       <button id="submitBtn" class="btn btn-primary px-4">Submit</button>
     </div>
@@ -255,7 +339,20 @@
       return;
     }
 
-    const data = raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+    let data;
+    try {
+      const parsed = JSON.parse(raw);
+      if (parsed && Array.isArray(parsed.data)) {
+        data = parsed.data;
+      } else if (Array.isArray(parsed)) {
+        data = parsed;
+      } else {
+        throw new Error('not json array');
+      }
+    } catch (e) {
+      // not JSON — treat as one edge per line
+      data = raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+    }
     const json = processData(data);
     renderResults(json);
   });
@@ -324,24 +421,53 @@
       col.className = 'col-md-6';
 
       const isCycle = !!h.has_cycle;
-      const headerClass = isCycle ? 'bg-danger text-white' : 'bg-primary text-white';
       const badge = isCycle
-        ? '<span class="badge bg-light text-danger ms-2">CYCLE</span>'
-        : `<span class="badge bg-light text-primary ms-2">depth: ${h.depth}</span>`;
+        ? '<span class="badge bg-danger ms-2">CYCLE</span>'
+        : `<span class="badge ms-2" style="background:#a78bfa;color:#fff">depth: ${h.depth}</span>`;
 
-      col.innerHTML = `
-        <div class="card shadow-sm h-100">
-          <div class="card-header ${headerClass} d-flex align-items-center">
-            Root: <strong class="ms-1">${h.root}</strong>${badge}
-          </div>
-          <div class="card-body">
-            ${isCycle
-              ? '<p class="text-muted mb-0">This group contains a cycle — no tree structure available.</p>'
-              : buildTreeHtml(h.tree)
-            }
+      const treeContent = isCycle
+        ? '<p class="text-muted mb-0" style="font-size:0.85rem">This group contains a cycle — no tree structure available.</p>'
+        : buildTreeHtml(h.tree);
+
+      const card = document.createElement('div');
+      card.className = 'stars-card h-100';
+
+      // stars layer
+      const starsLayer = document.createElement('div');
+      starsLayer.className = 'stars-layer';
+      const starCount = 60;
+      for (let i = 0; i < starCount; i++) {
+        const s = document.createElement('div');
+        s.className = 'star';
+        const size = Math.random() * 2 + 1;
+        s.style.cssText = `
+          width:${size}px; height:${size}px;
+          top:${Math.random()*100}%; left:${Math.random()*100}%;
+          --dur:${(Math.random()*3+2).toFixed(1)}s;
+          --delay:-${(Math.random()*4).toFixed(1)}s;
+        `;
+        starsLayer.appendChild(s);
+      }
+
+      // content
+      const content = document.createElement('div');
+      content.className = 'stars-card-content';
+      content.innerHTML = `
+        <div class="stars-card-title">Root: ${h.root} ${badge}</div>
+        <div class="stars-card-desc">${isCycle ? 'Cyclic Group' : `Tree · depth ${h.depth}`}</div>
+        <div class="stars-card-footer">
+          <div>${treeContent}</div>
+          <div class="stars-icon-btn ms-3 flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 8.25L21 12m0 0l-3.75 3.75M21 12H3"/>
+            </svg>
           </div>
         </div>
       `;
+
+      card.appendChild(starsLayer);
+      card.appendChild(content);
+      col.appendChild(card);
       hContainer.appendChild(col);
     }
 
@@ -378,6 +504,28 @@
     html += '</ul>';
     return html;
   }
+</script>
+
+<script>
+  // build ripple grid
+  (function () {
+    const grid = document.getElementById('bg-grid');
+    const cols = Math.ceil(window.innerWidth / 60);
+    const rows = Math.ceil(window.innerHeight / 60);
+    grid.style.setProperty('--cols', cols);
+    grid.style.setProperty('--rows', rows);
+    const total = cols * rows;
+    for (let i = 0; i < total; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'bg-cell';
+      // stagger delay based on distance from center
+      const col = i % cols, row = Math.floor(i / cols);
+      const dx = col - cols / 2, dy = row - rows / 2;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      cell.style.setProperty('--delay', `${(dist * 80) % 3000}ms`);
+      grid.appendChild(cell);
+    }
+  })();
 </script>
 </body>
 </html>
